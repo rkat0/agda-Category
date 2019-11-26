@@ -1,7 +1,7 @@
 module Category where
 
 open import Level
-open import Function
+open import Function using (flip; id)
 open import Relation.Binary
 open import Relation.Binary.Core
 
@@ -9,35 +9,35 @@ record IsCategory {c₁ c₂ ℓ : Level}
         (Obj : Set c₁)
         (Hom : Obj -> Obj -> Set c₂)
         (_≈_ : {A B : Obj} -> Rel (Hom A B) ℓ)
-        (_o_ : {A B C : Obj} -> Hom B C -> Hom A B -> Hom A C)
+        (_∘_ : {A B C : Obj} -> Hom B C -> Hom A B -> Hom A C)
         (Id : {A : Obj} -> Hom A A) : Set (suc (c₁ ⊔ c₂ ⊔ ℓ)) where
     field
         isEquivalence : {A B : Obj} -> IsEquivalence {c₂} {ℓ} {Hom A B} _≈_
-        identityL : {A B : Obj} -> {f : Hom A B} -> (Id o f) ≈ f
-        identityR : {A B : Obj} -> {f : Hom A B} -> (f o Id) ≈ f
-        o-resp-≈ : {A B C : Obj} -> {f g : Hom A B} -> {h i : Hom B C} -> h ≈ i -> f ≈ g -> (h o f) ≈ (i o g)
-        associative : {A B C D : Obj} -> {f : Hom C D} -> {g : Hom B C} -> {h : Hom A B} -> (f o (g o h)) ≈ ((f o g) o h)
+        identityL : {A B : Obj} -> {f : Hom A B} -> (Id ∘ f) ≈ f
+        identityR : {A B : Obj} -> {f : Hom A B} -> (f ∘ Id) ≈ f
+        ∘-resp-≈ : {A B C : Obj} -> {f g : Hom A B} -> {h i : Hom B C} -> h ≈ i -> f ≈ g -> (h ∘ f) ≈ (i ∘ g)
+        associative : {A B C D : Obj} -> {f : Hom C D} -> {g : Hom B C} -> {h : Hom A B} -> (f ∘ (g ∘ h)) ≈ ((f ∘ g) ∘ h)
 
 record Category c₁ c₂ ℓ : Set (suc (c₁ ⊔ c₂ ⊔ ℓ)) where
-    infixr 9 _o_
+    infixr 9 _∘_
     infix 4 _≈_
     field
         Obj : Set c₁
         Hom : Obj -> Obj -> Set c₂
-        _o_ : {A B C : Obj} -> Hom B C -> Hom A B -> Hom A C
+        _∘_ : {A B C : Obj} -> Hom B C -> Hom A B -> Hom A C
         _≈_ : {A B : Obj} -> Rel (Hom A B) ℓ
         Id : {A : Obj} -> Hom A A
-        isCategory : IsCategory Obj Hom _≈_ _o_ Id
+        isCategory : IsCategory Obj Hom _≈_ _∘_ Id
 
     op : Category c₁ c₂ ℓ
-    op = record {Obj = Obj ; Hom = flip Hom ; _o_ = flip _o_ ; _≈_ = _≈_ ; Id = Id ; isCategory = opIsCategory}
+    op = record {Obj = Obj ; Hom = flip Hom ; _∘_ = flip _∘_ ; _≈_ = _≈_ ; Id = Id ; isCategory = opIsCategory}
         where
-            opIsCategory : IsCategory {c₁} {c₂} {ℓ} Obj (flip Hom) _≈_ (flip _o_) Id
+            opIsCategory : IsCategory {c₁} {c₂} {ℓ} Obj (flip Hom) _≈_ (flip _∘_) Id
             opIsCategory = record {
                     isEquivalence = IsCategory.isEquivalence isCategory ;
                     identityL = IsCategory.identityR isCategory ;
                     identityR = IsCategory.identityL isCategory ;
-                    o-resp-≈ = flip (IsCategory.o-resp-≈ isCategory) ;
+                    ∘-resp-≈ = flip (IsCategory.∘-resp-≈ isCategory) ;
                     associative = IsEquivalence.sym (IsCategory.isEquivalence isCategory) (IsCategory.associative isCategory)
                 }
     dom : {A B : Obj} -> Hom A B -> Obj
@@ -55,13 +55,13 @@ _[_≈_] : ∀ {c₁ c₂ ℓ} -> (C : Category c₁ c₂ ℓ) -> {A B : Obj C} 
 C [ f ≈ g ] = Category._≈_ C f g
 
 _[_∘_] : ∀ {c₁ c₂ ℓ} -> (C : Category c₁ c₂ ℓ) -> {a b c : Obj C} -> Hom C b c -> Hom C a b -> Hom C a c
-C [ f ∘ g ] = Category._o_ C f g
+C [ f ∘ g ] = Category._∘_ C f g
 
 infixr 9 _[_∘_]
 infix 4 _[_≈_]
 
-Id : ∀ {c₁ c₂ ℓ} {C : Category c₁ c₂ ℓ} -> (A : Obj C) -> Hom C A A
-Id {C = C} A = Category.Id C {A}
+Id : ∀ {c₁ c₂ ℓ} -> (C : Category c₁ c₂ ℓ) -> (A : Obj C) -> Hom C A A
+Id C A = Category.Id C {A}
 
 record IsFunctor {c₁ c₂ ℓ c₁′ c₂′ ℓ′ : Level}
         (C : Category c₁ c₂ ℓ)
@@ -71,7 +71,7 @@ record IsFunctor {c₁ c₂ ℓ c₁′ c₂′ ℓ′ : Level}
         : Set (suc (c₁ ⊔ c₂ ⊔ ℓ ⊔ c₁′ ⊔ c₂′ ⊔ ℓ′)) where
     field
         ≈-cong : {A B : Obj C} {f g : Hom C A B} -> C [ f ≈ g ] -> D [ FMap f ≈ FMap g ]
-        identity : {A : Obj C} -> D [ FMap {A} {A} (Id {C = C} A) ≈ Id {C = D} (FObj A) ]
+        identity : {A : Obj C} -> D [ FMap {A} {A} (Id C A) ≈ Id D (FObj A) ]
         distr : {a b c : Obj C} {f : Hom C b c} {g : Hom C a b} -> D [ FMap (C [ f ∘ g ]) ≈ D [ FMap f ∘ FMap g ] ]
 
 record Functor {c₁ c₂ ℓ c₁′ c₂′ ℓ′ : Level}
@@ -112,11 +112,11 @@ TMap α = NatTrans.TMap α
 
 
 module ≈-Reasoning {c₁ c₂ ℓ : Level} (C : Category c₁ c₂ ℓ) where
-    _o_ : {a b c : Obj C} -> Hom C b c -> Hom C a b -> Hom C a c
-    f o g = C [ f ∘ g ]
+    _∘_ : {a b c : Obj C} -> Hom C b c -> Hom C a b -> Hom C a c
+    f ∘ g = C [ f ∘ g ]
     _≈_ : {a b : Obj C} -> Rel (Hom C a b) ℓ
     f ≈ g = C [ f ≈ g ]
-    infixr 9 _o_
+    infixr 9 _∘_
     infix 4 _≈_
 
     refl-hom : {a b : Obj C} {f : Hom C a b} -> f ≈ f
@@ -125,10 +125,10 @@ module ≈-Reasoning {c₁ c₂ ℓ : Level} (C : Category c₁ c₂ ℓ) where
     sym-hom = IsEquivalence.sym (IsCategory.isEquivalence (Category.isCategory C))
     trans-hom : {a b : Obj C} {f g h : Hom C a b} -> f ≈ g -> g ≈ h -> f ≈ h
     trans-hom = IsEquivalence.trans (IsCategory.isEquivalence (Category.isCategory C))
-    assoc-hom : {a b c d : Obj C} {f : Hom C c d} {g : Hom C b c} {h : Hom C a b} -> f o (g o h) ≈ (f o g) o h
+    assoc-hom : {a b c d : Obj C} {f : Hom C c d} {g : Hom C b c} {h : Hom C a b} -> f ∘ (g ∘ h) ≈ (f ∘ g) ∘ h
     assoc-hom = IsCategory.associative (Category.isCategory C)
-    o-resp-≈ : {a b c : Obj C} -> {f g : Hom C a b} -> {h i : Hom C b c} -> h ≈ i -> f ≈ g -> (h o f) ≈ (i o g)
-    o-resp-≈ = IsCategory.o-resp-≈ (Category.isCategory C)
+    ∘-resp-≈ : {a b c : Obj C} -> {f g : Hom C a b} -> {h i : Hom C b c} -> h ≈ i -> f ≈ g -> h ∘ f ≈ i ∘ g
+    ∘-resp-≈ = IsCategory.∘-resp-≈ (Category.isCategory C)
     infix 3 _∎
     infixr 2 _≈<_>_ _≈<>_
     infix 1 begin_
@@ -160,7 +160,7 @@ Fcomp {C = C} {E = E} F G = record {FObj = FObj_FG ; FMap = FMap_FG ; isFunctor 
             where
                 ≈-cong : {a b : Obj C} {f g : Hom C a b} -> C [ f ≈ g ] -> E [ FMap_FG f ≈ FMap_FG g ]
                 ≈-cong f≈g = (IsFunctor.≈-cong (Functor.isFunctor F) (IsFunctor.≈-cong (Functor.isFunctor G) f≈g))
-                identity : {a : Obj C} -> E [ FMap_FG (Id {C = C} a) ≈ Id {C = E} (FObj_FG a) ]
+                identity : {a : Obj C} -> E [ FMap_FG (Id C a) ≈ Id E (FObj_FG a) ]
                 identity = IsEquivalence.trans (IsCategory.isEquivalence (Category.isCategory E)) (IsFunctor.≈-cong (Functor.isFunctor F) (IsFunctor.identity (Functor.isFunctor G))) (IsFunctor.identity (Functor.isFunctor F))
                 distr : {a b c : Obj C} {f : Hom C b c} {g : Hom C a b} -> E [ FMap_FG (C [ f ∘ g ]) ≈ E [ FMap_FG f ∘ FMap_FG g ] ]
                 distr = IsEquivalence.trans (IsCategory.isEquivalence (Category.isCategory E)) (IsFunctor.≈-cong (Functor.isFunctor F) (IsFunctor.distr (Functor.isFunctor G))) (IsFunctor.distr (Functor.isFunctor F))
@@ -169,15 +169,15 @@ IdNatTrans : ∀ {c₁ c₂ ℓ c₁′ c₂′ ℓ′} {C : Category c₁ c₂ 
 IdNatTrans {C = C} {D} {F} = record {TMap = tmap ; isNatTrans = isNatTrans}
     where
         tmap : (a : Obj C) -> Hom D (FObj F a) (FObj F a)
-        tmap a = Id {C = D} (FObj F a)
+        tmap a = Id D (FObj F a)
         isNatTrans : IsNatTrans F F tmap
         isNatTrans = record {commute = commute}
             where
                 commute : {a b : Obj C} {f : Hom C a b} -> D [ D [ tmap b ∘ FMap F f ] ≈ D [ FMap F f ∘ tmap a ] ]
                 commute {a} {b} {f} = let open ≈-Reasoning D in
-                    begin tmap b o FMap F f
+                    begin tmap b ∘ FMap F f
                     ≈< IsCategory.identityL (Category.isCategory D) > FMap F f
-                    ≈< sym-hom (IsCategory.identityR (Category.isCategory D)) > FMap F f o tmap a
+                    ≈< sym-hom (IsCategory.identityR (Category.isCategory D)) > FMap F f ∘ tmap a
                     ∎
 
 infixr 8 _◯_ _⁎_
@@ -192,12 +192,12 @@ _◯_ {C = C} {D} {F} {G} {H} α β = record {TMap = tmap ; isNatTrans = isNatTr
             where
                 commute : {a b : Obj C} {f : Hom C a b} -> D [ D [ tmap b ∘ FMap F f ] ≈ D [ FMap H f ∘ tmap a ] ]
                 commute {a} {b} {f} = let open ≈-Reasoning D in
-                    begin (TMap α b o TMap β b) o FMap F f
-                    ≈< sym-hom (IsCategory.associative (Category.isCategory D)) > TMap α b o (TMap β b o FMap F f)
-                    ≈< IsCategory.o-resp-≈ (Category.isCategory D) refl-hom (IsNatTrans.commute (NatTrans.isNatTrans β)) > TMap α b o (FMap G f o TMap β a)
-                    ≈< IsCategory.associative (Category.isCategory D) > (TMap α b o FMap G f) o TMap β a
-                    ≈< IsCategory.o-resp-≈ (Category.isCategory D) (IsNatTrans.commute (NatTrans.isNatTrans α)) refl-hom > (FMap H f o TMap α a) o TMap β a
-                    ≈< sym-hom (IsCategory.associative (Category.isCategory D)) > FMap H f o (TMap α a o TMap β a)
+                    begin (TMap α b ∘ TMap β b) ∘ FMap F f
+                    ≈< sym-hom (IsCategory.associative (Category.isCategory D)) > TMap α b ∘ (TMap β b ∘ FMap F f)
+                    ≈< IsCategory.∘-resp-≈ (Category.isCategory D) refl-hom (IsNatTrans.commute (NatTrans.isNatTrans β)) > TMap α b ∘ (FMap G f ∘ TMap β a)
+                    ≈< IsCategory.associative (Category.isCategory D) > (TMap α b ∘ FMap G f) ∘ TMap β a
+                    ≈< IsCategory.∘-resp-≈ (Category.isCategory D) (IsNatTrans.commute (NatTrans.isNatTrans α)) refl-hom > (FMap H f ∘ TMap α a) ∘ TMap β a
+                    ≈< sym-hom (IsCategory.associative (Category.isCategory D)) > FMap H f ∘ (TMap α a ∘ TMap β a)
                     ∎
 
 _⁎_ : ∀ {c₁ c₂ ℓ c₁′ c₂′ ℓ′ c₁″ c₂″ ℓ″} {C : Category c₁ c₂ ℓ} {D : Category c₁′ c₂′ ℓ′} {E : Category c₁″ c₂″ ℓ″} {F G : Functor C D} {H I : Functor D E} -> NatTrans H I -> NatTrans F G -> NatTrans (Fcomp H F) (Fcomp I G)
@@ -214,27 +214,27 @@ _⁎_ {C = C} {D} {E} {F} {G} {H} {I} α β = record {TMap = tmap ; isNatTrans =
             where
                 commute : {a b : Obj C} {f : Hom C a b} -> E [ E [ tmap b ∘ FMap HF f ] ≈ E [ FMap IG f ∘ tmap a ] ]
                 commute {a} {b} {f} = let open ≈-Reasoning E in
-                    begin (TMap α (FObj G b) o FMap H (TMap β b)) o FMap H (FMap F f)
-                    ≈< sym-hom assoc-hom > TMap α (FObj G b) o (FMap H (TMap β b) o FMap H (FMap F f))
-                    ≈< o-resp-≈ refl-hom (sym-hom (IsFunctor.distr (Functor.isFunctor H))) > TMap α (FObj G b) o (FMap H (D [ TMap β b ∘ FMap F f ]))
-                    ≈< o-resp-≈ refl-hom (IsFunctor.≈-cong (Functor.isFunctor H) (IsNatTrans.commute (NatTrans.isNatTrans β))) > TMap α (FObj G b) o (FMap H (D [ FMap G f ∘ TMap β a ]))
-                    ≈< o-resp-≈ refl-hom (IsFunctor.distr (Functor.isFunctor H)) > TMap α (FObj G b) o (FMap H (FMap G f) o FMap H (TMap β a))
-                    ≈< assoc-hom > (TMap α (FObj G b) o FMap H (FMap G f)) o FMap H (TMap β a)
-                    ≈< o-resp-≈ (IsNatTrans.commute (NatTrans.isNatTrans α)) refl-hom > (FMap I (FMap G f) o TMap α (FObj G a)) o FMap H (TMap β a)
-                    ≈< sym-hom assoc-hom > FMap I (FMap G f) o (TMap α (FObj G a) o FMap H (TMap β a))
+                    begin (TMap α (FObj G b) ∘ FMap H (TMap β b)) ∘ FMap H (FMap F f)
+                    ≈< sym-hom assoc-hom > TMap α (FObj G b) ∘ (FMap H (TMap β b) ∘ FMap H (FMap F f))
+                    ≈< ∘-resp-≈ refl-hom (sym-hom (IsFunctor.distr (Functor.isFunctor H))) > TMap α (FObj G b) ∘ (FMap H (D [ TMap β b ∘ FMap F f ]))
+                    ≈< ∘-resp-≈ refl-hom (IsFunctor.≈-cong (Functor.isFunctor H) (IsNatTrans.commute (NatTrans.isNatTrans β))) > TMap α (FObj G b) ∘ (FMap H (D [ FMap G f ∘ TMap β a ]))
+                    ≈< ∘-resp-≈ refl-hom (IsFunctor.distr (Functor.isFunctor H)) > TMap α (FObj G b) ∘ (FMap H (FMap G f) ∘ FMap H (TMap β a))
+                    ≈< assoc-hom > (TMap α (FObj G b) ∘ FMap H (FMap G f)) ∘ FMap H (TMap β a)
+                    ≈< ∘-resp-≈ (IsNatTrans.commute (NatTrans.isNatTrans α)) refl-hom > (FMap I (FMap G f) ∘ TMap α (FObj G a)) ∘ FMap H (TMap β a)
+                    ≈< sym-hom assoc-hom > FMap I (FMap G f) ∘ (TMap α (FObj G a) ∘ FMap H (TMap β a))
                     ∎
 
 NT-interchange : ∀ {c₁ c₂ ℓ c₁′ c₂′ ℓ′ c₁″ c₂″ ℓ″} {C : Category c₁ c₂ ℓ} {D : Category c₁′ c₂′ ℓ′} {E : Category c₁″ c₂″ ℓ″} {F G H : Functor C D} {F′ G′ H′ : Functor D E} {α : NatTrans G H} {β : NatTrans F G} {α′ : NatTrans G′ H′} {β′ : NatTrans F′ G′} {a : Obj C} -> E [ TMap ((α′ ◯ β′) ⁎ (α ◯ β)) a ≈ TMap ((α′ ⁎ α) ◯ (β′ ⁎ β)) a ]
 NT-interchange {D = D} {E} {F} {G} {H} {F′} {G′} {H′} {α} {β} {α′} {β′} {a} = let open ≈-Reasoning E in
     begin TMap ((α′ ◯ β′) ⁎ (α ◯ β)) a
-    ≈<> TMap (α′ ◯ β′) (FObj H a) o FMap F′ (TMap (α ◯ β) a)
-    ≈<> (TMap α′ (FObj H a) o TMap β′ (FObj H a)) o FMap F′ (D [ TMap α a ∘ TMap β a ])
-    ≈< o-resp-≈ refl-hom (IsFunctor.distr (Functor.isFunctor F′)) > (TMap α′ (FObj H a) o TMap β′ (FObj H a)) o (FMap F′ (TMap α a) o FMap F′ (TMap β a))
-    ≈< assoc-hom > ((TMap α′ (FObj H a) o TMap β′ (FObj H a)) o FMap F′ (TMap α a)) o FMap F′ (TMap β a)
-    ≈< o-resp-≈ (sym-hom assoc-hom) refl-hom > (TMap α′ (FObj H a) o (TMap β′ (FObj H a) o FMap F′ (TMap α a))) o FMap F′ (TMap β a)
-    ≈< o-resp-≈ (o-resp-≈ refl-hom (IsNatTrans.commute (NatTrans.isNatTrans β′))) refl-hom > (TMap α′ (FObj H a) o (FMap G′ (TMap α a) o TMap β′ (FObj G a))) o FMap F′ (TMap β a)
-    ≈< o-resp-≈ assoc-hom refl-hom > ((TMap α′ (FObj H a) o FMap G′ (TMap α a)) o TMap β′ (FObj G a)) o FMap F′ (TMap β a)
-    ≈< sym-hom assoc-hom > (TMap α′ (FObj H a) o FMap G′ (TMap α a)) o (TMap β′ (FObj G a) o FMap F′ (TMap β a))
-    ≈<> (TMap (α′ ⁎ α) a) o (TMap (β′ ⁎ β) a)
+    ≈<> TMap (α′ ◯ β′) (FObj H a) ∘ FMap F′ (TMap (α ◯ β) a)
+    ≈<> (TMap α′ (FObj H a) ∘ TMap β′ (FObj H a)) ∘ FMap F′ (D [ TMap α a ∘ TMap β a ])
+    ≈< ∘-resp-≈ refl-hom (IsFunctor.distr (Functor.isFunctor F′)) > (TMap α′ (FObj H a) ∘ TMap β′ (FObj H a)) ∘ (FMap F′ (TMap α a) ∘ FMap F′ (TMap β a))
+    ≈< assoc-hom > ((TMap α′ (FObj H a) ∘ TMap β′ (FObj H a)) ∘ FMap F′ (TMap α a)) ∘ FMap F′ (TMap β a)
+    ≈< ∘-resp-≈ (sym-hom assoc-hom) refl-hom > (TMap α′ (FObj H a) ∘ (TMap β′ (FObj H a) ∘ FMap F′ (TMap α a))) ∘ FMap F′ (TMap β a)
+    ≈< ∘-resp-≈ (∘-resp-≈ refl-hom (IsNatTrans.commute (NatTrans.isNatTrans β′))) refl-hom > (TMap α′ (FObj H a) ∘ (FMap G′ (TMap α a) ∘ TMap β′ (FObj G a))) ∘ FMap F′ (TMap β a)
+    ≈< ∘-resp-≈ assoc-hom refl-hom > ((TMap α′ (FObj H a) ∘ FMap G′ (TMap α a)) ∘ TMap β′ (FObj G a)) ∘ FMap F′ (TMap β a)
+    ≈< sym-hom assoc-hom > (TMap α′ (FObj H a) ∘ FMap G′ (TMap α a)) ∘ (TMap β′ (FObj G a) ∘ FMap F′ (TMap β a))
+    ≈<> (TMap (α′ ⁎ α) a) ∘ (TMap (β′ ⁎ β) a)
     ≈<> TMap ((α′ ⁎ α) ◯ (β′ ⁎ β)) a
     ∎
