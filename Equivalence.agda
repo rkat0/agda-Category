@@ -143,6 +143,10 @@ record Isomorphic {c₁ c₂ ℓ c₁′ c₂′ ℓ′ : Level}
         G : Functor D C
         inverse : FInverse F G
 
+infix 4 _≅_
+_≅_ : {c₁ c₂ ℓ c₁′ c₂′ ℓ′ : Level} -> Category c₁ c₂ ℓ -> Category c₁′ c₂′ ℓ′ -> Set (suc (c₁ ⊔ c₂ ⊔ ℓ ⊔ c₁′ ⊔ c₂′ ⊔ ℓ′))
+C ≅ D = Isomorphic C D
+
 record NatInverse {c₁ c₂ ℓ c₁′ c₂′ ℓ′ : Level}
         {C : Category c₁ c₂ ℓ}
         {D : Category c₁′ c₂′ ℓ′}
@@ -174,6 +178,10 @@ record Equivalence {c₁ c₂ ℓ c₁′ c₂′ ℓ′ : Level}
         FG≃id : NatIsomorphic (Fcomp F G) IdFunctor
         GF≃id : NatIsomorphic (Fcomp G F) IdFunctor
 
+infix 4 _≃_
+_≃_ : {c₁ c₂ ℓ c₁′ c₂′ ℓ′ : Level} -> Category c₁ c₂ ℓ -> Category c₁′ c₂′ ℓ′ -> Set (suc (c₁ ⊔ c₂ ⊔ ℓ ⊔ c₁′ ⊔ c₂′ ⊔ ℓ′))
+C ≃ D = Equivalence C D
+
 ◯-idL : ∀ {c₁ c₂ ℓ c₁′ c₂′ ℓ′} {C : Category c₁ c₂ ℓ} {D : Category c₁′ c₂′ ℓ′} {F G : Functor C D} {α : NatTrans F G} -> IdNatTrans G ◯ α ≡N α
 ◯-idL {D = D} = record {tmapEq = IsCategory.identityL (Category.isCategory D)}
 
@@ -181,7 +189,10 @@ record Equivalence {c₁ c₂ ℓ c₁′ c₂′ ℓ′ : Level}
 ◯-idR {D = D} = record {tmapEq = IsCategory.identityR (Category.isCategory D)}
 
 ≡F⇒NatIso : {c₁ c₂ ℓ c₁′ c₂′ ℓ′ : Level} {C : Category c₁ c₂ ℓ} {D : Category c₁′ c₂′ ℓ′} {F G : Functor C D} -> F ≡F G -> NatIsomorphic F G
-≡F⇒NatIso {C = C} {D} {F} {G} F≡G = record {F⇒G = α ; G⇒F = β ; inverse = record {αβ=id = record {tmapEq = tmapEq1}; βα=id = record {tmapEq = tmapEq2}}}
+≡F⇒NatIso {C = C} {D} {F} {G} F≡G = record {
+    F⇒G = α ;
+    G⇒F = β ;
+    inverse = record {αβ=id = record {tmapEq = tmapEq1}; βα=id = record {tmapEq = tmapEq2}} }
     where
         open _≡F_
         α : NatTrans F G
@@ -228,4 +239,8 @@ record Equivalence {c₁ c₂ ℓ c₁′ c₂′ ℓ′ : Level}
             ∎
 
 Iso⇒Equ : {c₁ c₂ ℓ c₁′ c₂′ ℓ′ : Level} {C : Category c₁ c₂ ℓ} {D : Category c₁′ c₂′ ℓ′} -> Isomorphic C D -> Equivalence C D
-Iso⇒Equ iso = record {F = Isomorphic.F iso ; G = Isomorphic.G iso ; FG≃id = ≡F⇒NatIso (FInverse.FG=id (Isomorphic.inverse iso)) ; GF≃id = ≡F⇒NatIso (FInverse.GF=id (Isomorphic.inverse iso))}
+Iso⇒Equ iso = record {
+    F = Isomorphic.F iso ;
+    G = Isomorphic.G iso ;
+    FG≃id = ≡F⇒NatIso (FInverse.FG=id (Isomorphic.inverse iso)) ;
+    GF≃id = ≡F⇒NatIso (FInverse.GF=id (Isomorphic.inverse iso)) }

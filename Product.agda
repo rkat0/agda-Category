@@ -2,12 +2,14 @@ module Product where
 
 open import Level
 open import Relation.Binary.Core
-open import Data.Product using (_×_; _,_; map; zip)
+open import Data.Product using (_×_; _,_; map; zip; proj₁; proj₂)
 
 open import Category
+open import Equivalence
 
-product : ∀ {c₁ c₂ ℓ c₁′ c₂′ ℓ′} -> Category c₁ c₂ ℓ -> Category c₁′ c₂′ ℓ′ -> Category (c₁ ⊔ c₁′) (c₂ ⊔ c₂′) (ℓ ⊔ ℓ′)
-product {c₁} {c₂} {ℓ} {c₁′} {c₂′} {ℓ′} C D = record { Obj = obj ; Hom = hom ; _≈_ = _≈_ ; _∘_ = _∘_ ; Id = id ; isCategory = isCategory }
+infixr 5 _×c_
+_×c_ : ∀ {c₁ c₂ ℓ c₁′ c₂′ ℓ′} -> Category c₁ c₂ ℓ -> Category c₁′ c₂′ ℓ′ -> Category (c₁ ⊔ c₁′) (c₂ ⊔ c₂′) (ℓ ⊔ ℓ′)
+_×c_ {c₁} {c₂} {ℓ} {c₁′} {c₂′} {ℓ′} C D = record { Obj = obj ; Hom = hom ; _≈_ = _≈_ ; _∘_ = _∘_ ; Id = id ; isCategory = isCategory }
     where
         obj : Set (c₁ ⊔ c₁′)
         obj = Obj C × Obj D
@@ -29,3 +31,27 @@ product {c₁} {c₂} {ℓ} {c₁′} {c₂′} {ℓ′} C D = record { Obj = ob
             identityR = IsCategory.identityR (Category.isCategory C) , IsCategory.identityR (Category.isCategory D) ;
             ∘-resp-≈ = zip (IsCategory.∘-resp-≈ (Category.isCategory C)) (IsCategory.∘-resp-≈ (Category.isCategory D)) ;
             associative = IsCategory.associative (Category.isCategory C) , IsCategory.associative (Category.isCategory D) }
+
+product-assoc : {c₁ c₂ ℓ c₁′ c₂′ ℓ′ c₁″ c₂″ ℓ″ : Level} {C : Category c₁ c₂ ℓ} {D : Category c₁′ c₂′ ℓ′} {E : Category c₁″ c₂″ ℓ″} -> (C ×c D) ×c E ≅ C ×c (D ×c E)
+product-assoc {C = C} {D} {E} = record {F = F ; G = G ; inverse = record {FG=id = FG=id ; GF=id = GF=id}}
+    where
+        F : Functor ((C ×c D) ×c E) (C ×c (D ×c E))
+        F = record {
+            FObj = \a -> proj₁ (proj₁ a) , (proj₂ (proj₁ a) , proj₂ a) ;
+            FMap = \f -> proj₁ (proj₁ f) , (proj₂ (proj₁ f) , proj₂ f) ;
+            isFunctor = record {
+                ≈-cong = \x -> proj₁ (proj₁ x) , (proj₂ (proj₁ x) , proj₂ x) ;
+                identity = ≈-Reasoning.refl-hom (C ×c (D ×c E)) ;
+                distr = ≈-Reasoning.refl-hom (C ×c (D ×c E)) } }
+        G : Functor (C ×c (D ×c E)) ((C ×c D) ×c E)
+        G = record {
+            FObj = \a -> (proj₁ a , proj₁ (proj₂ a)) , proj₂ (proj₂ a) ;
+            FMap = \f -> (proj₁ f , proj₁ (proj₂ f)) , proj₂ (proj₂ f) ;
+            isFunctor = record {
+                ≈-cong = \x -> (proj₁ x , proj₁ (proj₂ x)) , proj₂ (proj₂ x) ;
+                identity = ≈-Reasoning.refl-hom ((C ×c D) ×c E) ;
+                distr = ≈-Reasoning.refl-hom ((C ×c D) ×c E) } }
+        FG=id : Fcomp F G ≡F IdFunctor
+        FG=id = record {fmapEq = ≋-Reasoning.refl-hom (C ×c (D ×c E))}
+        GF=id : Fcomp G F ≡F IdFunctor
+        GF=id = record {fmapEq = ≋-Reasoning.refl-hom ((C ×c D) ×c E)}
