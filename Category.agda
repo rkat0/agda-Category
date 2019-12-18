@@ -145,7 +145,7 @@ module ≈-Reasoning {c₁ c₂ ℓ : Level} (C : Category c₁ c₂ ℓ) where
     _ ≈⟨⟩ f≈g = f≈g
     _∎ : {a b : Obj C} -> (f : Hom C a b) -> f ≈ f
     _ ∎ = refl-hom
-    
+
 IdFunctor : ∀ {c₁ c₂ ℓ} {C : Category c₁ c₂ ℓ} -> Functor C C
 IdFunctor {C = C} = record {FObj = id ; FMap = id ; isFunctor = isFunctor}
     where

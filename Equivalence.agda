@@ -43,7 +43,7 @@ module ≋-Reasoning {c₁ c₂ ℓ : Level} (C : Category c₁ c₂ ℓ) where
     refl-hom = ≈⇒≋ (IsEquivalence.refl (IsCategory.isEquivalence (Category.isCategory C)))
     sym-hom : {a b a′ b′ : Obj C} {f : Hom C a b} {g : Hom C a′ b′} -> f ≋ g -> g ≋ f
     sym-hom (≈⇒≋ f≈g) = ≈⇒≋ (IsEquivalence.sym (IsCategory.isEquivalence (Category.isCategory C)) f≈g)
-    trans-hom : {a b a′ b′ a′′ b′′ : Obj C} {f : Hom C a b} {g : Hom C a′ b′} {h : Hom C a′′ b′′} -> f ≋ g -> g ≋ h -> f ≋ h
+    trans-hom : {a b a′ b′ a″ b″ : Obj C} {f : Hom C a b} {g : Hom C a′ b′} {h : Hom C a″ b″} -> f ≋ g -> g ≋ h -> f ≋ h
     trans-hom (≈⇒≋ f≈g) (≈⇒≋ g≈h) = ≈⇒≋ (IsEquivalence.trans (IsCategory.isEquivalence (Category.isCategory C)) f≈g g≈h)
     assoc-hom : {a b c d : Obj C} {f : Hom C c d} {g : Hom C b c} {h : Hom C a b} -> f ∘ (g ∘ h) ≋ (f ∘ g) ∘ h
     assoc-hom = ≈⇒≋ (IsCategory.associative (Category.isCategory C))
@@ -62,7 +62,7 @@ module ≋-Reasoning {c₁ c₂ ℓ : Level} (C : Category c₁ c₂ ℓ) where
     begin≈ (≈⇒≋ f≈g) = f≈g
     begin≋_ : {a b a′ b′ : Obj C} {f : Hom C a b} {g : Hom C a′ b′} -> f ≋ g -> f ≋ g
     begin≋ f≋g = f≋g
-    _≋⟨_⟩_ : {a b a′ b′ a′′ b′′ : Obj C} -> (f : Hom C a b) -> {g : Hom C a′ b′} {h : Hom C a′′ b′′} -> f ≋ g -> g ≋ h -> f ≋ h
+    _≋⟨_⟩_ : {a b a′ b′ a″ b″ : Obj C} -> (f : Hom C a b) -> {g : Hom C a′ b′} {h : Hom C a″ b″} -> f ≋ g -> g ≋ h -> f ≋ h
     _ ≋⟨ f≋g ⟩ g≋h = trans-hom f≋g g≋h
     _≈⟨_⟩_ : {a b a′ b′ : Obj C} -> (f : Hom C a b) -> {g : Hom C a b} {h : Hom C a′ b′} -> f ≈ g -> g ≋ h -> f ≋ h
     _ ≈⟨ f≈g ⟩ g≋h = trans-hom (≈⇒≋ f≈g) g≋h
@@ -70,6 +70,9 @@ module ≋-Reasoning {c₁ c₂ ℓ : Level} (C : Category c₁ c₂ ℓ) where
     _ ≋⟨⟩ f≋g = f≋g
     _∎ : {a b : Obj C} -> (f : Hom C a b) -> f ≋ f
     _ ∎ = refl-hom
+
+≋-congF : {c₁ c₂ ℓ c₁′ c₂′ ℓ′ : Level} {C : Category c₁ c₂ ℓ} {D : Category c₁′ c₂′ ℓ′} {F : Functor C D} {a b a′ b′ : Obj C} {f : Hom C a b} {g : Hom C a′ b′} -> C [ f ≋ g ] -> D [ FMap F f ≋ FMap F g ]
+≋-congF {F = F} (≈⇒≋ f≈g) = ≈⇒≋ (IsFunctor.≈-cong (Functor.isFunctor F) f≈g)
 
 infix 4 _≡F_
 record _≡F_ {c₁ c₂ ℓ c₁′ c₂′ ℓ′ : Level}
@@ -111,8 +114,37 @@ record _≡F_ {c₁ c₂ ℓ c₁′ c₂′ ℓ′ : Level}
         ≋⟨ subst⇒cod-≋ ⟩ subst⇒cod (f ∘ g)
         ∎
 
-sym-≡F : {c₁ c₂ ℓ c₁′ c₂′ ℓ′ : Level} {C : Category c₁ c₂ ℓ} {D : Category c₁′ c₂′ ℓ′} {F G : Functor C D} -> F ≡F G -> G ≡F F
-sym-≡F {D = D} F≡G = record {fmapEq = ≋-Reasoning.sym-hom D (_≡F_.fmapEq F≡G)}
+module ≡F-Reasoning where
+    infix 8 _∘F_
+    _∘F_ : {c₁ c₂ ℓ c₁′ c₂′ ℓ′ c₁″ c₂″ ℓ″ : Level} {C : Category c₁ c₂ ℓ} {D : Category c₁′ c₂′ ℓ′} {E : Category c₁″ c₂″ ℓ″} -> (F : Functor D E) -> (G : Functor C D) -> Functor C E
+    F ∘F G = Fcomp F G
+    refl-F : {c₁ c₂ ℓ c₁′ c₂′ ℓ′ : Level} {C : Category c₁ c₂ ℓ}  {D : Category c₁′ c₂′ ℓ′} {F : Functor C D} -> F ≡F F
+    refl-F {D = D} = record {fmapEq = ≋-Reasoning.refl-hom D}
+    sym-F : {c₁ c₂ ℓ c₁′ c₂′ ℓ′ : Level} {C : Category c₁ c₂ ℓ} {D : Category c₁′ c₂′ ℓ′} {F G : Functor C D} -> F ≡F G -> G ≡F F
+    sym-F {D = D} F≡G = record {fmapEq = ≋-Reasoning.sym-hom D (_≡F_.fmapEq F≡G)}
+    trans-F : {c₁ c₂ ℓ c₁′ c₂′ ℓ′ : Level} {C : Category c₁ c₂ ℓ} {D : Category c₁′ c₂′ ℓ′} {F G H : Functor C D} -> F ≡F G -> G ≡F H -> F ≡F H
+    trans-F {D = D} F≡G G≡H = record {fmapEq = ≋-Reasoning.trans-hom D (_≡F_.fmapEq F≡G) (_≡F_.fmapEq G≡H)}
+
+    assoc-F : {c₁ c₂ ℓ c₁′ c₂′ ℓ′ c₁″ c₂″ ℓ″ c₁‴ c₂‴ ℓ‴ : Level} {A : Category c₁ c₂ ℓ} {B : Category c₁′ c₂′ ℓ′} {C : Category c₁″ c₂″ ℓ″} {D : Category c₁‴ c₂‴ ℓ‴} {F : Functor C D} {G : Functor B C} {H : Functor A B} -> F ∘F (G ∘F H) ≡F (F ∘F G) ∘F H
+    assoc-F {D = D} = record {fmapEq = ≋-Reasoning.refl-hom D}
+    comp-resp-F : {c₁ c₂ ℓ c₁′ c₂′ ℓ′ c₁″ c₂″ ℓ″ : Level} {C : Category c₁ c₂ ℓ} {D : Category c₁′ c₂′ ℓ′} {E : Category c₁″ c₂″ ℓ″} {F G : Functor D E} {H I : Functor C D} -> F ≡F G -> H ≡F I -> F ∘F H ≡F G ∘F I
+    comp-resp-F {E = E} {F} {G} {H} {I} F≡G H≡I = record {fmapEq = ≋-Reasoning.trans-hom E (≋-congF {F = F} (_≡F_.fmapEq H≡I)) (_≡F_.fmapEq F≡G)}
+    identityL : {c₁ c₂ ℓ c₁′ c₂′ ℓ′ : Level} {C : Category c₁ c₂ ℓ} {D : Category c₁′ c₂′ ℓ′} {F : Functor C D} -> IdFunctor ∘F F ≡F F
+    identityL {D = D} = record {fmapEq = ≋-Reasoning.refl-hom D}
+    identityR : {c₁ c₂ ℓ c₁′ c₂′ ℓ′ : Level} {C : Category c₁ c₂ ℓ} {D : Category c₁′ c₂′ ℓ′} {F : Functor C D} -> F ∘F IdFunctor ≡F F
+    identityR {D = D} = record {fmapEq = ≋-Reasoning.refl-hom D}
+
+    infix 3 _∎
+    infixr 2 _≡⟨_⟩_ _≡⟨⟩_
+    infix 1 begin_
+    begin_ : {c₁ c₂ ℓ c₁′ c₂′ ℓ′ : Level} {C : Category c₁ c₂ ℓ}  {D : Category c₁′ c₂′ ℓ′} {F G : Functor C D} -> F ≡F G -> F ≡F G
+    begin F≡G = F≡G
+    _≡⟨_⟩_ : {c₁ c₂ ℓ c₁′ c₂′ ℓ′ : Level} {C : Category c₁ c₂ ℓ}  {D : Category c₁′ c₂′ ℓ′} -> (F : Functor C D) -> {G H : Functor C D} -> F ≡F G -> G ≡F H -> F ≡F H
+    _ ≡⟨ F≡G ⟩ G≡H = trans-F F≡G G≡H
+    _≡⟨⟩_ : {c₁ c₂ ℓ c₁′ c₂′ ℓ′ : Level} {C : Category c₁ c₂ ℓ}  {D : Category c₁′ c₂′ ℓ′} -> (F : Functor C D) -> {G : Functor C D} -> F ≡F G -> F ≡F G
+    _ ≡⟨⟩ F≡G = F≡G
+    _∎ : {c₁ c₂ ℓ c₁′ c₂′ ℓ′ : Level} {C : Category c₁ c₂ ℓ}  {D : Category c₁′ c₂′ ℓ′} -> (F : Functor C D) -> F ≡F F
+    _ ∎ = refl-F
 
 infix 4 _≡N_
 record _≡N_ {c₁ c₂ ℓ c₁′ c₂′ ℓ′ : Level}
@@ -146,6 +178,37 @@ record Isomorphic {c₁ c₂ ℓ c₁′ c₂′ ℓ′ : Level}
 infix 4 _≅_
 _≅_ : {c₁ c₂ ℓ c₁′ c₂′ ℓ′ : Level} -> Category c₁ c₂ ℓ -> Category c₁′ c₂′ ℓ′ -> Set (suc (c₁ ⊔ c₂ ⊔ ℓ ⊔ c₁′ ⊔ c₂′ ⊔ ℓ′))
 C ≅ D = Isomorphic C D
+
+≅-trans : {c₁ c₂ ℓ c₁′ c₂′ ℓ′ c₁″ c₂″ ℓ″ : Level} {C : Category c₁ c₂ ℓ} {D : Category c₁′ c₂′ ℓ′} {E : Category c₁″ c₂″ ℓ″} -> C ≅ D -> D ≅ E -> C ≅ E
+≅-trans {C = C} {D} {E} C≅D D≅E = record {
+    F = Fcomp D⇒E C⇒D ;
+    G = Fcomp C⇐D D⇐E ;
+    inverse = record {
+        FG=id = let open ≡F-Reasoning in
+        begin (D⇒E ∘F C⇒D) ∘F (C⇐D ∘F D⇐E)
+        ≡⟨ assoc-F {F = D⇒E ∘F C⇒D} {C⇐D} {D⇐E} ⟩ ((D⇒E ∘F C⇒D) ∘F C⇐D) ∘F D⇐E
+        ≡⟨ comp-resp-F (sym-F (assoc-F {F = D⇒E} {C⇒D} {C⇐D})) refl-F ⟩ (D⇒E ∘F (C⇒D ∘F C⇐D)) ∘F D⇐E
+        ≡⟨ comp-resp-F (comp-resp-F (refl-F {F = D⇒E}) (FInverse.FG=id (Isomorphic.inverse C≅D))) refl-F ⟩ (D⇒E ∘F IdFunctor) ∘F D⇐E
+        ≡⟨ comp-resp-F (identityR {F = D⇒E}) refl-F ⟩ D⇒E ∘F D⇐E
+        ≡⟨ FInverse.FG=id (Isomorphic.inverse D≅E) ⟩ IdFunctor
+        ∎ ;
+        GF=id = let open ≡F-Reasoning in
+        begin (C⇐D ∘F D⇐E) ∘F (D⇒E ∘F C⇒D)
+        ≡⟨ assoc-F {F = C⇐D ∘F D⇐E} {D⇒E} {C⇒D} ⟩ ((C⇐D ∘F D⇐E) ∘F D⇒E) ∘F C⇒D
+        ≡⟨ comp-resp-F (sym-F (assoc-F {F = C⇐D} {D⇐E} {D⇒E})) refl-F ⟩ (C⇐D ∘F (D⇐E ∘F D⇒E)) ∘F C⇒D
+        ≡⟨ comp-resp-F (comp-resp-F (refl-F {F = C⇐D}) (FInverse.GF=id (Isomorphic.inverse D≅E))) refl-F ⟩ (C⇐D ∘F IdFunctor) ∘F C⇒D
+        ≡⟨ comp-resp-F (identityR {F = C⇐D}) refl-F ⟩ C⇐D ∘F C⇒D
+        ≡⟨ FInverse.GF=id (Isomorphic.inverse C≅D) ⟩ IdFunctor
+        ∎ } }
+    where
+        C⇒D : Functor C D
+        C⇒D = Isomorphic.F C≅D
+        C⇐D : Functor D C
+        C⇐D = Isomorphic.G C≅D
+        D⇒E : Functor D E
+        D⇒E = Isomorphic.F D≅E
+        D⇐E : Functor E D
+        D⇐E = Isomorphic.G D≅E
 
 record NatInverse {c₁ c₂ ℓ c₁′ c₂′ ℓ′ : Level}
         {C : Category c₁ c₂ ℓ}
@@ -207,7 +270,7 @@ C ≃ D = Equivalence C D
                 ∎
             }}
         G≡F : G ≡F F
-        G≡F = sym-≡F F≡G
+        G≡F = ≡F-Reasoning.sym-F F≡G
         β : NatTrans G F
         β = record {
             TMap = \a -> subst⇒cod G≡F (Id D (FObj G a));
